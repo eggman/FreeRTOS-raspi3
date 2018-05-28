@@ -1,6 +1,15 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/* Scheduler include files. */
+#include "FreeRTOS.h"
+#include "task.h"
+
+/* Prototypes for the standard FreeRTOS callback/hook functions implemented
+within this file. */
+void vApplicationMallocFailedHook( void );
+void vApplicationIdleHook( void );
+
 static inline void io_halt(void)
 {
     asm volatile ("wfi");
@@ -22,15 +31,28 @@ void uart_puts(const char* str)
         uart_putchar((uint8_t)str[i]);
 }
 
-void main(void)
+void uart_puthex(uint64_t v)
 {
-    uart_puts("hello world\n");
-
-    while (1) {
-        io_halt();
-    }
+	const char *hexdigits = "0123456789ABSDEF";
+	for (int i = 60; i >= 0; i -= 4)
+		uart_putchar(hexdigits[(v >> i) & 0xf]);
 }
 
+/*-----------------------------------------------------------*/
+
+void main(void)
+{
+	uart_puts("hello world\n");
+
+	vTaskStartScheduler();
+
+	uart_puthex(xTaskGetTickCount());
+	uart_putchar('\n');
+
+	while (1) {
+		io_halt();
+	}
+}
 /*-----------------------------------------------------------*/
 
 void vApplicationIdleHook( void )
