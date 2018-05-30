@@ -63,6 +63,9 @@ context. */
 /* Masks all bits in the APSR other than the mode bits. */
 #define portAPSR_MODE_BITS_MASK			( 0x0C )
 
+/* Used in the ASM code. */
+__attribute__(( used )) const uint64_t ulCORE0_INT_SRC = 0x40000060;
+
 /*-----------------------------------------------------------*/
 
 /*
@@ -234,5 +237,24 @@ void vPortExitCritical( void )
 
 void FreeRTOS_Tick_Handler( void )
 {
+	/* Interrupts should not be enabled before this point. */
+	#if( configASSERT_DEFINED == 1 )
+	{
+		uint32_t ulMaskBits;
+
+		__asm volatile( "mrs %0, daif" : "=r"( ulMaskBits ) :: "memory" );
+		configASSERT( ( ulMaskBits & portDAIF_I ) != 0 );
+	}
+	#endif /* configASSERT_DEFINED */
+
+	/* Ok to enable interrupts after the interrupt source has been cleared. */
+	configCLEAR_TICK_INTERRUPT();
+	portENABLE_INTERRUPTS();
+
+	/* Increment the RTOS tick. */
+	if( xTaskIncrementTick() != pdFALSE )
+	{
+		ullPortYieldRequired = pdTRUE;
+	}
 }
 

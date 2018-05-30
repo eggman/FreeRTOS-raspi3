@@ -31,10 +31,16 @@
 #define configUSE_PREEMPTION					1
 #define configUSE_IDLE_HOOK						1
 #define configUSE_TICK_HOOK						1
+#define configTICK_RATE_HZ	                    ( ( TickType_t ) 1000 )
 #define configMAX_PRIORITIES					( 8 )
 #define configMINIMAL_STACK_SIZE				( ( unsigned short ) 200 )
 #define configTOTAL_HEAP_SIZE					( 124 * 1024 )
 #define configUSE_16_BIT_TICKS					0
+
+
+/* Set the following definitions to 1 to include the API function, or zero
+to exclude the API function. */
+#define INCLUDE_vTaskDelay						1
 
 void vConfigureTickInterrupt( void );
 #define configSETUP_TICK_INTERRUPT() vConfigureTickInterrupt()

@@ -47,7 +47,7 @@ void TaskA(void *pvParameters)
     {
 		uart_puthex(xTaskGetTickCount());
 		uart_putchar('\n');
-		io_halt();
+		vTaskDelay(500 / portTICK_RATE_MS);
     }
 }
 
