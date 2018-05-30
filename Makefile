@@ -19,7 +19,7 @@ OBJS +=build/tasks.o
 OBJS +=build/heap_1.o
 
 kernel8.elf : raspberrypi3.ld $(OBJS)
-	$(CROSS)-gcc -T raspberrypi3.ld -o $@ -ffreestanding -O2 -nostdlib $(OBJS)
+	$(CROSS)-gcc -Wl,--build-id=none -T raspberrypi3.ld -o $@ -ffreestanding -O2 -nostdlib $(OBJS)
 	$(CROSS)-objdump -D kernel8.elf > kernel8.list
 
 build/%.o : Demo/%.S

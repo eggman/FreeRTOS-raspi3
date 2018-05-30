@@ -1,4 +1,4 @@
-ENTRY(_start)
+ENTRY(_boot)
  
 SECTIONS
 {
@@ -8,6 +8,7 @@ SECTIONS
     __text_start = .;
     .text :
     {
+        KEEP(*(.vectors))
         KEEP(*(.text.boot))
         *(.text)
     }

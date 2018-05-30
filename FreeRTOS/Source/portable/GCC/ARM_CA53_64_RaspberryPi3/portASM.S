@@ -32,9 +32,82 @@
 	.extern pxCurrentTCB
 	.extern _freertos_vector_table
 
+	.globl FreeRTOS_SWI_Handler
 	.globl vPortRestoreTaskContext
 
 ; /**********************************************************************/
+
+.macro portSAVE_CONTEXT
+
+	/* Switch to use the EL0 stack pointer. */
+	MSR 	SPSEL, #0
+
+	/* Save the entire context. */
+	STP 	X0, X1, [SP, #-0x10]!
+	STP 	X2, X3, [SP, #-0x10]!
+	STP 	X4, X5, [SP, #-0x10]!
+	STP 	X6, X7, [SP, #-0x10]!
+	STP 	X8, X9, [SP, #-0x10]!
+	STP 	X10, X11, [SP, #-0x10]!
+	STP 	X12, X13, [SP, #-0x10]!
+	STP 	X14, X15, [SP, #-0x10]!
+	STP 	X16, X17, [SP, #-0x10]!
+	STP 	X18, X19, [SP, #-0x10]!
+	STP 	X20, X21, [SP, #-0x10]!
+	STP 	X22, X23, [SP, #-0x10]!
+	STP 	X24, X25, [SP, #-0x10]!
+	STP 	X26, X27, [SP, #-0x10]!
+	STP 	X28, X29, [SP, #-0x10]!
+	STP 	X30, XZR, [SP, #-0x10]!
+
+	/* Save the SPSR. */
+	MRS		X3, SPSR_EL1
+	MRS		X2, ELR_EL1
+
+	STP 	X2, X3, [SP, #-0x10]!
+
+	/* Save the critical section nesting depth. */
+	LDR		X0, ullCriticalNestingConst
+	LDR		X3, [X0]
+
+	/* Save the FPU context indicator. */
+	LDR		X0, ullPortTaskHasFPUContextConst
+	LDR		X2, [X0]
+
+	/* Save the FPU context, if any (32 128-bit registers). */
+	CMP		X2, #0
+	B.EQ	1f
+	STP		Q0, Q1, [SP,#-0x20]!
+	STP		Q2, Q3, [SP,#-0x20]!
+	STP		Q4, Q5, [SP,#-0x20]!
+	STP		Q6, Q7, [SP,#-0x20]!
+	STP		Q8, Q9, [SP,#-0x20]!
+	STP		Q10, Q11, [SP,#-0x20]!
+	STP		Q12, Q13, [SP,#-0x20]!
+	STP		Q14, Q15, [SP,#-0x20]!
+	STP		Q16, Q17, [SP,#-0x20]!
+	STP		Q18, Q19, [SP,#-0x20]!
+	STP		Q20, Q21, [SP,#-0x20]!
+	STP		Q22, Q23, [SP,#-0x20]!
+	STP		Q24, Q25, [SP,#-0x20]!
+	STP		Q26, Q27, [SP,#-0x20]!
+	STP		Q28, Q29, [SP,#-0x20]!
+	STP		Q30, Q31, [SP,#-0x20]!
+
+1:
+	/* Store the critical nesting count and FPU context indicator. */
+	STP 	X2, X3, [SP, #-0x10]!
+
+	LDR 	X0, pxCurrentTCBConst
+	LDR 	X1, [X0]
+	MOV 	X0, SP   /* Move SP into X0 for saving. */
+	STR 	X0, [X1]
+
+	/* Switch to use the ELx stack pointer. */
+	MSR 	SPSEL, #1
+
+	.endm
+
 
 .macro portRESTORE_CONTEXT
 
@@ -108,6 +181,29 @@
 	ERET
 
 	.endm
+
+/******************************************************************************
+ * FreeRTOS_SWI_Handler handler is used to perform a context switch.
+ *****************************************************************************/
+.align 8
+.type FreeRTOS_SWI_Handler, %function
+FreeRTOS_SWI_Handler:
+	/* Save the context of the current task and select a new task to run. */
+	portSAVE_CONTEXT
+	MRS		X0, ESR_EL1
+
+	LSR		X1, X0, #26
+
+	CMP		X1, #0x15 	/* 0x15 = SVC instruction. */
+
+	B.NE	FreeRTOS_Abort
+	BL 		vTaskSwitchContext
+
+	portRESTORE_CONTEXT
+
+FreeRTOS_Abort:
+	/* Full ESR is in X0, exception class code is in X1. */
+	B		.
 
 /******************************************************************************
  * vPortRestoreTaskContext is used to start the scheduler.
