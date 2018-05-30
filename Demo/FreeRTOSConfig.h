@@ -36,5 +36,10 @@
 #define configTOTAL_HEAP_SIZE					( 124 * 1024 )
 #define configUSE_16_BIT_TICKS					0
 
+void vConfigureTickInterrupt( void );
+#define configSETUP_TICK_INTERRUPT() vConfigureTickInterrupt()
+void vClearTickInterrupt( void );
+#define configCLEAR_TICK_INTERRUPT() vClearTickInterrupt()
+
 #endif /* FREERTOS_CONFIG_H */
 

@@ -62,7 +62,6 @@ typedef uint64_t TickType_t;
 
 /* Task utilities. */
 
-#define portYIELD_FROM_ISR( x ) portEND_SWITCHING_ISR( x )
 #define portYIELD() __asm volatile ( "SVC 0" ::: "memory" )
 
 /*-----------------------------------------------------------

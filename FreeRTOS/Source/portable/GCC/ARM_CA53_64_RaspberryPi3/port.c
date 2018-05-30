@@ -32,6 +32,16 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+#ifndef configSETUP_TICK_INTERRUPT
+	#error configSETUP_TICK_INTERRUPT() must be defined.  See http://www.freertos.org/Using-FreeRTOS-on-Cortex-A-Embedded-Processors.html
+#endif /* configSETUP_TICK_INTERRUPT */
+
+/* Some vendor specific files default configCLEAR_TICK_INTERRUPT() in
+portmacro.h. */
+#ifndef configCLEAR_TICK_INTERRUPT
+	#define configCLEAR_TICK_INTERRUPT()
+#endif
+
 /* A critical section is exited when the critical section nesting count reaches
 this value. */
 #define portNO_CRITICAL_NESTING			( ( size_t ) 0 )
@@ -49,6 +59,9 @@ context. */
 
 #define portEL1							( ( StackType_t ) 0x04 )
 #define portINITIAL_PSTATE				( portEL1 | portSP_EL0 )
+
+/* Masks all bits in the APSR other than the mode bits. */
+#define portAPSR_MODE_BITS_MASK			( 0x0C )
 
 /*-----------------------------------------------------------*/
 
@@ -71,11 +84,12 @@ volatile uint64_t ullCriticalNesting = 9999ULL;
 then floating point context must be saved and restored for the task. */
 uint64_t ullPortTaskHasFPUContext = pdFALSE;
 
+/* Set to 1 to pend a context switch from an ISR. */
+uint64_t ullPortYieldRequired = pdFALSE;
 
-/* Used in the ASM code. */
-__attribute__(( used )) const uint64_t ullICCPMR = 0; //portICCPMR_PRIORITY_MASK_REGISTER_ADDRESS;
-__attribute__(( used )) const uint64_t ullMaxAPIPriorityMask = 0; //( configMAX_API_CALL_INTERRUPT_PRIORITY << portPRIORITY_SHIFT );
-
+/* Counts the interrupt nesting depth.  A context switch is only performed if
+if the nesting depth is 0. */
+uint64_t ullPortInterruptNesting = 0;
 
 /*-----------------------------------------------------------*/
 /*
@@ -175,6 +189,14 @@ StackType_t *pxPortInitialiseStack( StackType_t *pxTopOfStack, TaskFunction_t px
 
 BaseType_t xPortStartScheduler( void )
 {
+	uint32_t ulAPSR;
+
+	/* At the time of writing, the BSP only supports EL3. */
+	__asm volatile ( "MRS %0, CurrentEL" : "=r" ( ulAPSR ) );
+	ulAPSR &= portAPSR_MODE_BITS_MASK;
+
+	configASSERT( ulAPSR == portEL1 );
+	if( ulAPSR == portEL1 )
 	{
 		{
 			/* Interrupts are turned off in the CPU itself to ensure a tick does
@@ -184,7 +206,7 @@ BaseType_t xPortStartScheduler( void )
 			portDISABLE_INTERRUPTS();
 
 			/* Start the timer that generates the tick ISR. */
-//			configSETUP_TICK_INTERRUPT();
+			configSETUP_TICK_INTERRUPT();
 
 			/* Start the first task executing. */
 			vPortRestoreTaskContext();
@@ -205,7 +227,12 @@ void vPortEnterCritical( void )
 }
 /*-----------------------------------------------------------*/
 
-
 void vPortExitCritical( void )
 {
 }
+/*-----------------------------------------------------------*/
+
+void FreeRTOS_Tick_Handler( void )
+{
+}
+

@@ -33,6 +33,7 @@
 	.extern _freertos_vector_table
 
 	.globl FreeRTOS_SWI_Handler
+	.globl FreeRTOS_IRQ_Handler
 	.globl vPortRestoreTaskContext
 
 ; /**********************************************************************/
@@ -222,8 +223,118 @@ vPortRestoreTaskContext:
 	/* Start the first task. */
 	portRESTORE_CONTEXT
 
+/******************************************************************************
+ * FreeRTOS_IRQ_Handler handles IRQ entry and exit.
+ *****************************************************************************/
+.align 8
+.type FreeRTOS_IRQ_Handler, %function
+FreeRTOS_IRQ_Handler:
+	/* Save volatile registers. */
+	STP		X0, X1, [SP, #-0x10]!
+	STP		X2, X3, [SP, #-0x10]!
+	STP		X4, X5, [SP, #-0x10]!
+	STP		X6, X7, [SP, #-0x10]!
+	STP		X8, X9, [SP, #-0x10]!
+	STP		X10, X11, [SP, #-0x10]!
+	STP		X12, X13, [SP, #-0x10]!
+	STP		X14, X15, [SP, #-0x10]!
+	STP		X16, X17, [SP, #-0x10]!
+	STP		X18, X19, [SP, #-0x10]!
+	STP		X29, X30, [SP, #-0x10]!
+
+	/* Save the SPSR and ELR. */
+	MRS		X3, SPSR_EL1
+	MRS		X2, ELR_EL1
+	STP 	X2, X3, [SP, #-0x10]!
+
+	/* Increment the interrupt nesting counter. */
+	LDR		X5, ullPortInterruptNestingConst
+	LDR		X1, [X5]	/* Old nesting count in X1. */
+	ADD		X6, X1, #1
+	STR		X6, [X5]	/* Address of nesting count variable in X5. */
+
+	/* Maintain the interrupt nesting information across the function call. */
+	STP		X1, X5, [SP, #-0x10]!
+
+	/* Call the C handler. */
+	BL vApplicationIRQHandler
+
+	/* Disable interrupts. */
+	MSR 	DAIFSET, #2
+	DSB		SY
+	ISB		SY
+
+	/* Restore the critical nesting count. */
+	LDP		X1, X5, [SP], #0x10
+	STR		X1, [X5]
+
+	/* Has interrupt nesting unwound? */
+	CMP		X1, #0
+	B.NE	Exit_IRQ_No_Context_Switch
+
+	/* Is a context switch required? */
+	LDR		X0, ullPortYieldRequiredConst
+	LDR		X1, [X0]
+	CMP		X1, #0
+	B.EQ	Exit_IRQ_No_Context_Switch
+
+	/* Reset ullPortYieldRequired to 0. */
+	MOV		X2, #0
+	STR		X2, [X0]
+
+	/* Restore volatile registers. */
+	LDP 	X4, X5, [SP], #0x10  /* SPSR and ELR. */
+	MSR		SPSR_EL1, X5
+	MSR		ELR_EL1, X4
+	DSB		SY
+	ISB		SY
+
+	LDP		X29, X30, [SP], #0x10
+	LDP		X18, X19, [SP], #0x10
+	LDP		X16, X17, [SP], #0x10
+	LDP		X14, X15, [SP], #0x10
+	LDP		X12, X13, [SP], #0x10
+	LDP		X10, X11, [SP], #0x10
+	LDP		X8, X9, [SP], #0x10
+	LDP		X6, X7, [SP], #0x10
+	LDP		X4, X5, [SP], #0x10
+	LDP		X2, X3, [SP], #0x10
+	LDP		X0, X1, [SP], #0x10
+
+	/* Save the context of the current task and select a new task to run. */
+	portSAVE_CONTEXT
+	BL vTaskSwitchContext
+	portRESTORE_CONTEXT
+
+Exit_IRQ_No_Context_Switch:
+	/* Restore volatile registers. */
+	LDP 	X4, X5, [SP], #0x10  /* SPSR and ELR. */
+	MSR		SPSR_EL1, X5
+	MSR		ELR_EL1, X4
+	DSB		SY
+	ISB		SY
+
+	LDP		X29, X30, [SP], #0x10
+	LDP		X18, X19, [SP], #0x10
+	LDP		X16, X17, [SP], #0x10
+	LDP		X14, X15, [SP], #0x10
+	LDP		X12, X13, [SP], #0x10
+	LDP		X10, X11, [SP], #0x10
+	LDP		X8, X9, [SP], #0x10
+	LDP		X6, X7, [SP], #0x10
+	LDP		X4, X5, [SP], #0x10
+	LDP		X2, X3, [SP], #0x10
+	LDP		X0, X1, [SP], #0x10
+
+	ERET
+
+
 .align 8
 pxCurrentTCBConst: .dword pxCurrentTCB
 ullCriticalNestingConst: .dword ullCriticalNesting
 ullPortTaskHasFPUContextConst: .dword ullPortTaskHasFPUContext
+
+vApplicationIRQHandlerConst: .word vApplicationIRQHandler
+ullPortInterruptNestingConst: .dword ullPortInterruptNesting
+ullPortYieldRequiredConst: .dword ullPortYieldRequired
 .end

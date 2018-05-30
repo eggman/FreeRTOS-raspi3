@@ -72,7 +72,7 @@ _freertos_vector_table:
 	b	FreeRTOS_SWI_Handler
 
 .org (FREERTOS_VBAR + 0x80)
-	b	. //FreeRTOS_IRQ_Handler
+	b	FreeRTOS_IRQ_Handler
 
 .org (FREERTOS_VBAR + 0x100)
 	b	.
@@ -84,7 +84,7 @@ _freertos_vector_table:
 	b	FreeRTOS_SWI_Handler
 
 .org (FREERTOS_VBAR + 0x280)
-	b	. //FreeRTOS_IRQ_Handler
+	b	FreeRTOS_IRQ_Handler
 
 .org (FREERTOS_VBAR + 0x300)
 	b	.
