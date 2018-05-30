@@ -2,9 +2,9 @@
 .section ".text.boot"
  
 // Make _start global.
-.globl _start
+.globl _boot
  
-_start:
+_boot:
     // in QEMU all of 4 ARM CPUs are started simultaniously by default.
     // use core 0 only, disable core 1,2,3.
     mrs   x1, mpidr_el1
@@ -12,7 +12,7 @@ _start:
     cmp   x1, #0
     bne   hang 
     // address for stack pointer.
-    ldr   x1, =_start
+    ldr   x1, =_boot
     // drop to EL2.
     mov   x2, #0x5b1    // RW=1, HCE=1, SMD=1, RES=1, NS=1
     msr   scr_el3, x2

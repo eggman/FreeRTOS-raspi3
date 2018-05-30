@@ -7,9 +7,11 @@ INCLUDEPATH2 ?= FreeRTOS/Source/portable/GCC/ARM_CA53_64_RaspberryPi3
 INCLUDEPATH3 ?= Demo
 
 OBJS = build/startup.o 
+OBJS +=build/FreeRTOS_asm_vector.o
 OBJS +=build/main.o
 
 OBJS +=build/port.o
+OBJS +=build/portASM.o
 
 OBJS +=build/list.o
 OBJS +=build/tasks.o
@@ -31,6 +33,9 @@ build/%.o : FreeRTOS/Source/%.c
 
 build/%.o : FreeRTOS/Source/portable/GCC/ARM_CA53_64_RaspberryPi3/%.c
 	$(CROSS)-gcc $(CFLAGS)  -c -o $@ $<
+
+build/%.o : FreeRTOS/Source/portable/GCC/ARM_CA53_64_RaspberryPi3/%.S
+	$(CROSS)-as $(ASMFLAGS) -c -o $@ $<
 
 build/%.o : FreeRTOS/Source/portable/MemMang/%.c
 	$(CROSS)-gcc $(CFLAGS)  -c -o $@ $<

@@ -37,21 +37,29 @@ void uart_puthex(uint64_t v)
 	for (int i = 60; i >= 0; i -= 4)
 		uart_putchar(hexdigits[(v >> i) & 0xf]);
 }
+/*-----------------------------------------------------------*/
+
+void TaskA(void *pvParameters)
+{
+	(void) pvParameters;
+
+    for( ;; )
+    {
+		uart_puthex(xTaskGetTickCount());
+		uart_putchar('\n');
+    }
+}
 
 /*-----------------------------------------------------------*/
 
 void main(void)
 {
+	xTaskHandle xHandle;
 	uart_puts("hello world\n");
 
+	xTaskCreate(TaskA, "Task A", 512, NULL, tskIDLE_PRIORITY, &xHandle);
+
 	vTaskStartScheduler();
-
-	uart_puthex(xTaskGetTickCount());
-	uart_putchar('\n');
-
-	while (1) {
-		io_halt();
-	}
 }
 /*-----------------------------------------------------------*/
 
