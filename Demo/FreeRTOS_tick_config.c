@@ -68,6 +68,7 @@ void init_timer(void)
 void timer_set_tick_rate_hz(uint32_t rate)
 {
 	timer_tick = timer_cntfrq / rate ;
+	write_cntv_tval(timer_tick);
 }
 /*-----------------------------------------------------------*/
 

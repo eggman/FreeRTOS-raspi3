@@ -222,16 +222,50 @@ BaseType_t xPortStartScheduler( void )
 
 void vPortEndScheduler( void )
 {
+	/* Not implemented in ports where there is nothing to return to.
+	Artificially force an assert. */
+	configASSERT( ullCriticalNesting == 1000ULL );
 }
 /*-----------------------------------------------------------*/
 
 void vPortEnterCritical( void )
 {
+	portDISABLE_INTERRUPTS();
+
+	/* Now interrupts are disabled ullCriticalNesting can be accessed
+	directly.  Increment ullCriticalNesting to keep a count of how many times
+	portENTER_CRITICAL() has been called. */
+	ullCriticalNesting++;
+
+	/* This is not the interrupt safe version of the enter critical function so
+	assert() if it is being called from an interrupt context.  Only API
+	functions that end in "FromISR" can be used in an interrupt.  Only assert if
+	the critical nesting count is 1 to protect against recursive calls if the
+	assert function also uses a critical section. */
+	if( ullCriticalNesting == 1ULL )
+	{
+		configASSERT( ullPortInterruptNesting == 0 );
+	}
 }
 /*-----------------------------------------------------------*/
 
 void vPortExitCritical( void )
 {
+	if( ullCriticalNesting > portNO_CRITICAL_NESTING )
+	{
+		/* Decrement the nesting count as the critical section is being
+		exited. */
+		ullCriticalNesting--;
+
+		/* If the nesting level has reached zero then all interrupt
+		priorities must be re-enabled. */
+		if( ullCriticalNesting == portNO_CRITICAL_NESTING )
+		{
+			/* Critical nesting has reached zero so interrupts
+			should be enabled. */
+			portENABLE_INTERRUPTS();
+		}
+	}
 }
 /*-----------------------------------------------------------*/
 
