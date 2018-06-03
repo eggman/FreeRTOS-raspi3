@@ -16,6 +16,7 @@ OBJS +=build/portASM.o
 
 OBJS +=build/list.o
 OBJS +=build/tasks.o
+OBJS +=build/queue.o
 
 OBJS +=build/heap_1.o
 

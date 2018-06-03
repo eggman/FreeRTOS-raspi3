@@ -4,6 +4,7 @@
 /* Scheduler include files. */
 #include "FreeRTOS.h"
 #include "task.h"
+#include "queue.h"
 
 /* Prototypes for the standard FreeRTOS callback/hook functions implemented
 within this file. */
@@ -56,9 +57,13 @@ void TaskA(void *pvParameters)
 void main(void)
 {
 	xTaskHandle xHandle;
+	xQueueHandle q;
 	uart_puts("hello world\n");
 
 	xTaskCreate(TaskA, "Task A", 512, NULL, tskIDLE_PRIORITY, &xHandle);
+
+	q = xQueueCreate(16, 16);
+	xQueueSend(q, xHandle, 0);
 
 	vTaskStartScheduler();
 }
