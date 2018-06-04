@@ -5,6 +5,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+#include "timers.h"
 
 /* Prototypes for the standard FreeRTOS callback/hook functions implemented
 within this file. */

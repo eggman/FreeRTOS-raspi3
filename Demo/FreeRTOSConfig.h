@@ -37,6 +37,12 @@
 #define configTOTAL_HEAP_SIZE					( 124 * 1024 )
 #define configUSE_16_BIT_TICKS					0
 
+/* Software timer definitions. */
+#define configUSE_TIMERS						1
+#define configTIMER_TASK_PRIORITY				( configMAX_PRIORITIES - 1 )
+#define configTIMER_QUEUE_LENGTH				5
+#define configTIMER_TASK_STACK_DEPTH			( configMINIMAL_STACK_SIZE * 2 )
+
 /* Set the following definitions to 1 to include the API function, or zero
 to exclude the API function. */
 #define INCLUDE_vTaskDelay						1

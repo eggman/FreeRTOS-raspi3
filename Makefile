@@ -17,11 +17,12 @@ OBJS +=build/portASM.o
 OBJS +=build/list.o
 OBJS +=build/tasks.o
 OBJS +=build/queue.o
+OBJS +=build/timers.o
 
 OBJS +=build/heap_1.o
 
 kernel8.elf : raspberrypi3.ld $(OBJS)
-	$(CROSS)-gcc -Wl,--build-id=none -T raspberrypi3.ld -o $@ -ffreestanding -O2 -nostdlib $(OBJS)
+	$(CROSS)-gcc -Wl,--build-id=none -std=gnu11 -T raspberrypi3.ld -o $@ -ffreestanding -O2 -nostdlib $(OBJS)
 	$(CROSS)-objdump -D kernel8.elf > kernel8.list
 
 build/%.o : Demo/%.S
