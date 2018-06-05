@@ -72,15 +72,33 @@ void TaskA(void *pvParameters)
 
 /*-----------------------------------------------------------*/
 
+TimerHandle_t timer;
+uint32_t count=0;
+void interval_func(TimerHandle_t pxTimer)
+{
+	(void) pxTimer;
+	count++;
+	uart_puts("timer count: ");
+	uart_puthex(count);
+	uart_putchar('\n');
+}
+/*-----------------------------------------------------------*/
+
 void main(void)
 {
-	xTaskHandle xHandle;
-	xQueueHandle q;
+	TaskHandle_t xHandle;
+	QueueHandle_t q;
 
 	uart_init();
 	uart_puts("hello world\n");
 
 	xTaskCreate(TaskA, "Task A", 512, NULL, tskIDLE_PRIORITY, &xHandle);
+
+	timer = xTimerCreate("print_every_1000ms",(1000 / portTICK_RATE_MS), pdTRUE, (void *)0, interval_func);
+	if(timer != NULL)
+	{
+		xTimerStart(timer, 0);
+	}
 
 	q = xQueueCreate(16, 16);
 	xQueueSend(q, xHandle, 0);
