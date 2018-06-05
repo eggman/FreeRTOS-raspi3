@@ -40,31 +40,29 @@ uint32_t count=0;
 void interval_func(TimerHandle_t pxTimer)
 {
 	(void) pxTimer;
-	count++;
-	uart_puts("timer count: ");
-	uart_puthex(count);
-	uart_putchar('\n');
+	uint8_t buf[2];
+	uint32_t len = 0;
+
+	len = uart_read_bytes(buf, sizeof(buf) - 1);
+	if (len)
+		uart_puts((char *)buf);
 }
 /*-----------------------------------------------------------*/
 
 void main(void)
 {
-	TaskHandle_t xHandle;
-	QueueHandle_t q;
+	TaskHandle_t task_a;
 
 	uart_init();
 	uart_puts("hello world\n");
 
-	xTaskCreate(TaskA, "Task A", 512, NULL, tskIDLE_PRIORITY, &xHandle);
+	xTaskCreate(TaskA, "Task A", 512, NULL, tskIDLE_PRIORITY, &task_a);
 
-	timer = xTimerCreate("print_every_1000ms",(1000 / portTICK_RATE_MS), pdTRUE, (void *)0, interval_func);
+	timer = xTimerCreate("print_every_10ms",(10 / portTICK_RATE_MS), pdTRUE, (void *)0, interval_func);
 	if(timer != NULL)
 	{
 		xTimerStart(timer, 0);
 	}
-
-	q = xQueueCreate(16, 16);
-	xQueueSend(q, xHandle, 0);
 
 	vTaskStartScheduler();
 }

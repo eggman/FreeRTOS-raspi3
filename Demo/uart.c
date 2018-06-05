@@ -13,6 +13,7 @@
 
 struct UARTCTL {
 	SemaphoreHandle_t *tx_mux;
+	QueueHandle_t     *rx_queue;
 };
 struct UARTCTL *uartctl;
 
@@ -51,6 +52,19 @@ void uart_puthex(uint64_t v)
 }
 /*-----------------------------------------------------------*/
 
+uint32_t uart_read_bytes(uint8_t *buf, uint32_t length)
+{
+	uint32_t num = uxQueueMessagesWaiting(uartctl->rx_queue);
+	uint32_t i;
+
+	for (i = 0; i < num || i < length; i++) {
+		xQueueReceive(uartctl->rx_queue, &buf[i], (portTickType) portMAX_DELAY);
+	}
+
+	return i;
+}
+/*-----------------------------------------------------------*/
+
 typedef void (*INTERRUPT_HANDLER) (void);
 typedef struct {
 	INTERRUPT_HANDLER fn;
@@ -77,7 +91,8 @@ void uart_isr(void)
 {
 	/* RX data */
 	if(*AUX_MU_LSR & 1 << 0) {
-		uart_putchar( (uint8_t) 0xFF & *AUX_MU_IO );
+		uint8_t c = (uint8_t) 0xFF & *AUX_MU_IO;
+		xQueueSendToBackFromISR(uartctl->rx_queue, &c, NULL);
 	}
 }
 /*-----------------------------------------------------------*/
@@ -86,6 +101,7 @@ void uart_init(void)
 {
 	uartctl = pvPortMalloc(sizeof (struct UARTCTL));
 	uartctl->tx_mux = xSemaphoreCreateMutex();
+	uartctl->rx_queue = xQueueCreate(16, sizeof (uint8_t));
 	uart_isr_register(uart_isr);
 }
 /*-----------------------------------------------------------*/
