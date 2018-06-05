@@ -2,6 +2,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+#include "demo.h"
+
 /* ARM Generic Timer */
 #define CORE0_TIMER_IRQCNTL    ((volatile uint32_t *)(0x40000040))
 static uint32_t timer_cntfrq = 0;
@@ -74,10 +76,15 @@ void vApplicationIRQHandler( uint32_t ulCORE0_INT_SRC )
 	ulInterruptID = ulCORE0_INT_SRC & 0x0007FFFFUL;
 
 	/* call handler function */
-	if( ulInterruptID == (1 << 3) )
+	if(ulInterruptID & (1 << 3))
 	{
-		/* timer */
+		/* Generic Timer */
 		FreeRTOS_Tick_Handler();
+	}
+	if(ulInterruptID & (1 << 8))
+	{
+		/* Peripherals */
+		irq_handler();
 	}
 }
 
