@@ -5,6 +5,9 @@
 #include "FreeRTOS.h"
 #include "semphr.h"
 
+#define GPFSEL1     ((volatile uint32_t *)(0x3f200004))
+#define GPPUDCLK0   ((volatile uint32_t *)(0x3f200098))
+
 #define AUX_ENABLES	((volatile uint32_t *)(0x3F215004))
 #define AUX_MU_IO	((volatile uint32_t *)(0x3F215040))
 #define AUX_MU_IER	((volatile uint32_t *)(0x3F215044))
@@ -99,6 +102,18 @@ void uart_isr(void)
 
 void uart_init(void)
 {
+	uint32_t r;
+
+    /* GPIO14 GPIO15 */
+	r = *GPFSEL1;
+	r &= ~(7<<12|7<<15);
+	r |= 2<<12|2<<15; /* ALT5 */
+	*GPFSEL1 = r;
+    r = 150; while(r--) { asm volatile("nop"); }
+    *GPPUDCLK0 = (1<<14)|(1<<15);
+    r = 150; while(r--) { asm volatile("nop"); }
+    *GPPUDCLK0 = 0;
+
 	uartctl = pvPortMalloc(sizeof (struct UARTCTL));
 	uartctl->tx_mux = xSemaphoreCreateMutex();
 	uartctl->rx_queue = xQueueCreate(16, sizeof (uint8_t));
