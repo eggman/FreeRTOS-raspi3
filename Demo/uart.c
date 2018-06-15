@@ -12,7 +12,9 @@
 #define AUX_MU_IO	((volatile uint32_t *)(0x3F215040))
 #define AUX_MU_IER	((volatile uint32_t *)(0x3F215044))
 #define AUX_MU_IIR	((volatile uint32_t *)(0x3F215048))
+#define AUX_MU_LCR	((volatile uint32_t *)(0x3F215048))
 #define AUX_MU_LSR	((volatile uint32_t *)(0x3F215054))
+#define AUX_MU_BAUD	((volatile uint32_t *)(0x3F215068))
 
 struct UARTCTL {
 	SemaphoreHandle_t *tx_mux;
@@ -113,6 +115,11 @@ void uart_init(void)
     *GPPUDCLK0 = (1<<14)|(1<<15);
     r = 150; while(r--) { asm volatile("nop"); }
     *GPPUDCLK0 = 0;
+
+    /* 115200/8bit */
+    *AUX_MU_BAUD = 270;    /* 115200 bps */
+    *AUX_MU_LCR = 3;       /* 8 bits */
+    /* Mini uart  only support  non parity. */
 
 	uartctl = pvPortMalloc(sizeof (struct UARTCTL));
 	uartctl->tx_mux = xSemaphoreCreateMutex();
