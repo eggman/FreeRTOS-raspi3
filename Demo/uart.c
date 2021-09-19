@@ -85,7 +85,7 @@ static void uart_isr_register(void (*fn)(void))
 	/* enable AUX miniuart rx interrupt */
 	*AUX_ENABLES = 1;
 	*AUX_MU_IIR  = 6; /* clear tx & rx interrupt*/
-	*AUX_MU_IER  = 2;
+	*AUX_MU_IER  = 1;
 
 	/* unmask AUX interrupt */
 	*IRQ_ENABLE_1 = 1 << 29;

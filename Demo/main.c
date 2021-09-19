@@ -25,6 +25,8 @@ void TaskA(void *pvParameters)
 {
 	(void) pvParameters;
 
+	uart_puts("start TaskA\n");
+
     for( ;; )
     {
 		uart_puthex(xTaskGetTickCount());
@@ -54,6 +56,7 @@ void main(void)
 	TaskHandle_t task_a;
 
 	uart_init();
+	uart_puts("qemu exit: Ctrl-A x / qemu monitor: Ctrl-A c\n");
 	uart_puts("hello world\n");
 
 	xTaskCreate(TaskA, "Task A", 512, NULL, tskIDLE_PRIORITY, &task_a);
